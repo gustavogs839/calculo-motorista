@@ -2,7 +2,7 @@
   "name": "calculo-motorista",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://github.com/gustavogs839/calculo-motorista.git", 
+  "homepage": "https://gustavogs839.github.io/calculo-motorista/",
   "type": "module",
   "scripts": {
     "dev": "vite",

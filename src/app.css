@@ -187,12 +187,21 @@ input:focus {
 .verde { color: var(--success); font-weight: 800; }
 .vermelho { color: var(--danger); font-weight: 800; }
 
-/* Estilização do Mês */
+/* Ajuste para o campo que marcaste com as setas */
 input[type="month"] {
-  border: none;
-  background: white;
-  font-weight: 700;
-  padding: 8px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 15px;
+  background: #ffffff;
+  font-weight: 600;
+  color: #1e293b;
+  outline: none;
+  transition: 0.3s;
+}
+
+input[type="month"]:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* Animação de Entrada para Novos Registos */

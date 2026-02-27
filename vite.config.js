@@ -1,8 +1,7 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: "/calculo-motorista/", 
+  base: "/calculo-motorista/",
+  build: {
+    outDir: 'docs' // Vamos mudar de 'dist' para 'docs'
+  }
 })

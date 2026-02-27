@@ -8,45 +8,90 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import './App.css';
 import logoUber from './assets/uber.png'; 
-import logo99 from './assets/99.png';     
+import logo99 from './assets/99.png'; 
+
+// --- IMPORTAÇÕES DO FIREBASE ---
+import { db } from './firebase'; 
+import { 
+  collection, addDoc, onSnapshot, query, 
+  orderBy, deleteDoc, doc 
+} from "firebase/firestore";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
 function App() {
-  const [transacoes, setTransacoes] = useState(() => {
-    const salvo = localStorage.getItem('transacoes_motorista');
-    return salvo ? JSON.parse(salvo) : [];
-  });
-
+  // --- ESTADOS ---
+  const [transacoes, setTransacoes] = useState([]); // Começa vazio, vem do banco
   const [descricao, setDescricao] = useState('');
   const [valor, setValor] = useState('');
   const [tipo, setTipo] = useState('ganho');
   const [data, setData] = useState(new Date().toISOString().split('T')[0]);
   const [mesFiltro, setMesFiltro] = useState(new Date().toISOString().substring(0, 7));
-
-  // --- ALTERAÇÃO 1: Novo estado para a plataforma ---
   const [plataforma, setPlataforma] = useState('Uber'); 
-
   const [km, setKm] = useState('');
   const [kml, setKml] = useState('');
   const [precoLitro, setPrecoLitro] = useState('');
 
+  // --- BUSCAR DADOS DO FIREBASE (TEMPO REAL) ---
   useEffect(() => {
-    localStorage.setItem('transacoes_motorista', JSON.stringify(transacoes));
-  }, [transacoes]);
+    // Busca na coleção 'transacoes' e ordena por data
+    const q = query(collection(db, "transacoes"), orderBy("data", "desc"));
+    
+    // O onSnapshot atualiza o app sozinho se algo mudar no banco
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const dados = snapshot.docs.map(doc => ({
+        id: doc.id, // O ID agora é gerado pelo Firebase
+        ...doc.data()
+      }));
+      setTransacoes(dados);
+    });
 
+    return () => unsubscribe(); // Fecha a conexão ao sair do app
+  }, []);
+
+  // --- CÁLCULOS (FILTROS) ---
   const transacoesFiltradas = transacoes.filter(t => t.data.startsWith(mesFiltro));
   const totalGanhos = transacoesFiltradas.filter(t => t.tipo === 'ganho').reduce((acc, t) => acc + t.valor, 0);
   const totalGastos = transacoesFiltradas.filter(t => t.tipo === 'gasto').reduce((acc, t) => acc + t.valor, 0);
   const saldoFinal = totalGanhos - totalGastos;
   const totalKmMes = transacoesFiltradas.reduce((acc, t) => acc + (t.distanciaPercorrida || 0), 0);
 
+  // --- ADICIONAR NO FIREBASE ---
+  const adicionarTransacao = async (e) => {
+    e.preventDefault();
+    if (!descricao || !valor) return alert("Preencha os campos!");
+
+    const descricaoFinal = tipo === 'ganho' ? `${plataforma}: ${descricao}` : descricao;
+
+    try {
+      await addDoc(collection(db, "transacoes"), {
+        descricao: descricaoFinal,
+        valor: parseFloat(valor),
+        tipo,
+        data,
+        distanciaPercorrida: (descricao.includes("Combustível") && km) ? parseFloat(km) : 0,
+        criadoEm: new Date()
+      });
+      
+      // Limpar campos
+      setDescricao(''); setValor(''); setKm(''); setKml(''); setPrecoLitro('');
+    } catch (err) {
+      console.error("Erro ao salvar:", err);
+    }
+  };
+
+  // --- REMOVER DO FIREBASE ---
+  const removerTransacao = async (id) => {
+    if(window.confirm("Deseja apagar este registro?")) {
+      await deleteDoc(doc(db, "transacoes", id));
+    }
+  };
+
+  // --- FUNÇÕES DE APOIO (PDF E CÁLCULOS) ---
   const exportarPDF = () => {
-    const doc = new jsPDF();
-    doc.text(`Relatorio Mensal - ${mesFiltro}`, 14, 20);
-    doc.text(`Saldo: R$ ${saldoFinal.toFixed(2)} | KM Total: ${totalKmMes.toFixed(1)}km`, 14, 30);
-    
-    autoTable(doc, {
+    const docPdf = new jsPDF();
+    docPdf.text(`Relatorio Mensal - ${mesFiltro}`, 14, 20);
+    autoTable(docPdf, {
       startY: 40,
       head: [['Data', 'Descrição', 'Tipo', 'Valor']],
       body: transacoesFiltradas.map(t => [
@@ -55,9 +100,8 @@ function App() {
         t.tipo.toUpperCase(), 
         `R$ ${t.valor.toFixed(2)}`
       ]),
-      headStyles: { fillColor: [44, 62, 80] }
     });
-    doc.save(`Relatorio_${mesFiltro}.pdf`);
+    docPdf.save(`Relatorio_${mesFiltro}.pdf`);
   };
 
   const calcularGastoCombustivel = () => {
@@ -67,25 +111,6 @@ function App() {
       setTipo('gasto');
       setDescricao(`Combustível - ${km} km`);
     }
-  };
-
-  const adicionarTransacao = (e) => {
-    e.preventDefault();
-    if (!descricao || !valor) return alert("Preencha os campos!");
-
-    // --- ALTERAÇÃO 2: Incluir a plataforma na descrição ---
-    const descricaoFinal = tipo === 'ganho' ? `${plataforma}: ${descricao}` : descricao;
-
-    const nova = { 
-      id: Date.now(), 
-      descricao: descricaoFinal, 
-      valor: parseFloat(valor), 
-      tipo, 
-      data,
-      distanciaPercorrida: (descricao.includes("Combustível") && km) ? parseFloat(km) : 0 
-    };
-    setTransacoes([nova, ...transacoes]);
-    setDescricao(''); setValor(''); setKm(''); setKml(''); setPrecoLitro('');
   };
 
   const dadosPorDia = transacoesFiltradas.reduce((acc, t) => {
@@ -109,7 +134,7 @@ function App() {
         </div>
       </header>
 
-      {/* DASHBOARD VISUAL (GRÁFICOS) */}
+      {/* DASHBOARD VISUAL */}
       <div className="dashboard-visual">
         <div className="row-charts">
           <div className="chart-mini">
@@ -145,30 +170,21 @@ function App() {
       </div>
 
       <form onSubmit={adicionarTransacao} className="formulario">
-        
-        {/* --- ALTERAÇÃO 3: Seletor Visual de Uber/99 --- */}
-       {tipo === 'ganho' && (
-  <div className="seletor-plataforma">
-    <div 
-      className={`opcao-plataforma ${plataforma === 'Uber' ? 'ativa-uber' : ''}`} 
-      onClick={() => setPlataforma('Uber')}
-    >
-      <img src={logoUber} alt="Uber" /> {/* Usando a variável importada */}
-      <span>Uber</span>
-    </div>
-    
-    <div 
-      className={`opcao-plataforma ${plataforma === '99' ? 'ativa-99' : ''}`} 
-      onClick={() => setPlataforma('99')}
-    >
-      <img src={logo99} alt="99" /> {/* Usando a variável importada */}
-      <span>99</span>
-    </div>
-  </div>
-)}
+        {tipo === 'ganho' && (
+          <div className="seletor-plataforma">
+            <div className={`opcao-plataforma ${plataforma === 'Uber' ? 'ativa-uber' : ''}`} onClick={() => setPlataforma('Uber')}>
+              <img src={logoUber} alt="Uber" />
+              <span>Uber</span>
+            </div>
+            <div className={`opcao-plataforma ${plataforma === '99' ? 'ativa-99' : ''}`} onClick={() => setPlataforma('99')}>
+              <img src={logo99} alt="99" />
+              <span>99</span>
+            </div>
+          </div>
+        )}
 
         <div className="row">
-          <input type="text" placeholder="Descrição (ex: Corrida Diurna)" value={descricao} onChange={(e)=>setDescricao(e.target.value)} />
+          <input type="text" placeholder="Descrição" value={descricao} onChange={(e)=>setDescricao(e.target.value)} />
           <input type="date" value={data} onChange={(e)=>setData(e.target.value)} />
         </div>
         <div className="row">
@@ -182,33 +198,26 @@ function App() {
       </form>
 
       <div className="historico-container">
-  <h3>Lançamentos de {mesFiltro}</h3>
-  <ul className="lista">
-    {transacoesFiltradas.map(t => (
-      <li key={t.id} className={t.tipo}>
-        <div className="info-item">
-          <small>{t.data.split('-').reverse().join('/')}</small>
-          
-          {/* --- ALTERAÇÃO AQUI: Logo dinâmico no histórico --- */}
-          <div className="flex-row">
-            {t.descricao.startsWith('Uber') && <img src={logoUber} className="mini-logo" alt="Uber" />}
-            {t.descricao.startsWith('99') && <img src={logo99} className="mini-logo" alt="99" />}
-            <span>{t.descricao}</span>
-          </div>
-        </div>
-        
-        <div className="valor-item">
-          <strong className={t.tipo === 'ganho' ? "verde" : "vermelho"}>
-            R$ {t.valor.toFixed(2)}
-          </strong>
-          <button onClick={() => setTransacoes(transacoes.filter(x => x.id !== t.id))} className="btn-del">
-            🗑️
-          </button>
-        </div>
-      </li>
-    ))}
-  </ul>
-</div>
+        <h3>Lançamentos de {mesFiltro}</h3>
+        <ul className="lista">
+          {transacoesFiltradas.map(t => (
+            <li key={t.id} className={t.tipo}>
+              <div className="info-item">
+                <small>{t.data.split('-').reverse().join('/')}</small>
+                <div className="flex-row">
+                  {t.descricao.startsWith('Uber') && <img src={logoUber} className="mini-logo" alt="Uber" />}
+                  {t.descricao.startsWith('99') && <img src={logo99} className="mini-logo" alt="99" />}
+                  <span>{t.descricao}</span>
+                </div>
+              </div>
+              <div className="valor-item">
+                <strong className={t.tipo === 'ganho' ? "verde" : "vermelho"}>R$ {t.valor.toFixed(2)}</strong>
+                <button onClick={() => removerTransacao(t.id)} className="btn-del">🗑️</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

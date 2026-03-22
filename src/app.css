@@ -299,7 +299,7 @@ header {
 /* --- COMPARATIVO DE PLATAFORMAS --- */
 .plataforma-comparison {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 16px;
   margin: 25px 0;
   padding: 20px 0;
@@ -747,8 +747,9 @@ input[type="month"]:focus {
 
 /* 10. SELETOR DE PLATAFORMA MODERNO */
 .seletor-plataforma {
-  display: flex;
-  gap: 15px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 12px;
   margin-bottom: 25px;
 }
 
@@ -830,6 +831,38 @@ input[type="month"]:focus {
 }
 
 .ativa-99 img {
+  filter: brightness(1.3) saturate(1.2);
+}
+
+/* Estilo Shopee Ativo */
+.ativa-shopee {
+  border-color: #ee4d2d !important;
+  background: linear-gradient(135deg, rgba(238, 77, 45, 0.15), rgba(238, 77, 45, 0.1)) !important;
+  box-shadow: 0 0 24px rgba(238, 77, 45, 0.2) !important;
+}
+
+.ativa-shopee span {
+  color: #ff6b57;
+  font-weight: 900;
+}
+
+.ativa-shopee img {
+  filter: brightness(1.2) saturate(1.1);
+}
+
+/* Estilo Mercado Livre Ativo */
+.ativa-mercadolivre {
+  border-color: #ffc600 !important;
+  background: linear-gradient(135deg, rgba(255, 198, 0, 0.15), rgba(255, 198, 0, 0.1)) !important;
+  box-shadow: 0 0 24px rgba(255, 198, 0, 0.2) !important;
+}
+
+.ativa-mercadolivre span {
+  color: #ffde59;
+  font-weight: 900;
+}
+
+.ativa-mercadolivre img {
   filter: brightness(1.3) saturate(1.2);
 }
 

@@ -9,6 +9,8 @@ import autoTable from 'jspdf-autotable';
 import './App.css';
 import logoUber from './assets/uber.png'; 
 import logo99 from './assets/99.png'; 
+import logoShopee from './assets/shopee.png';
+import logoMercadoLivre from './assets/mercadolivre.png'; 
 
 // --- IMPORTAÇÕES DO FIREBASE ---
 import { db } from './firebase'; 
@@ -59,6 +61,8 @@ function App() {
   // --- NOVAS ESTATÍSTICAS ---
   const ganhosPorUber = transacoesFiltradas.filter(t => t.tipo === 'ganho' && t.descricao.startsWith('Uber')).reduce((acc, t) => acc + t.valor, 0);
   const ganhosPor99 = transacoesFiltradas.filter(t => t.tipo === 'ganho' && t.descricao.startsWith('99')).reduce((acc, t) => acc + t.valor, 0);
+  const ganhosPorShopee = transacoesFiltradas.filter(t => t.tipo === 'ganho' && t.descricao.startsWith('Shopee')).reduce((acc, t) => acc + t.valor, 0);
+  const ganhosPorMercadoLivre = transacoesFiltradas.filter(t => t.tipo === 'ganho' && t.descricao.startsWith('Mercado Livre')).reduce((acc, t) => acc + t.valor, 0);
   const gastoCombustivel = transacoesFiltradas.filter(t => t.descricao && t.descricao.includes('Combustível')).reduce((acc, t) => acc + t.valor, 0);
   const diasComDados = new Set(transacoesFiltradas.map(t => t.data)).size;
   const mediaGanhosPorDia = diasComDados > 0 ? totalGanhos / diasComDados : 0;
@@ -203,6 +207,22 @@ function App() {
             </div>
             <div className="plat-percent">{totalGanhos > 0 ? ((ganhosPor99/totalGanhos)*100).toFixed(0) : 0}%</div>
           </div>
+          <div className="plat-item">
+            <img src={logoShopee} alt="Shopee" className="plat-logo" />
+            <div className="plat-info">
+              <span className="plat-name">Shopee</span>
+              <span className="plat-valor">R$ {ganhosPorShopee.toFixed(2)}</span>
+            </div>
+            <div className="plat-percent">{totalGanhos > 0 ? ((ganhosPorShopee/totalGanhos)*100).toFixed(0) : 0}%</div>
+          </div>
+          <div className="plat-item">
+            <img src={logoMercadoLivre} alt="Mercado Livre" className="plat-logo" />
+            <div className="plat-info">
+              <span className="plat-name">M. Livre</span>
+              <span className="plat-valor">R$ {ganhosPorMercadoLivre.toFixed(2)}</span>
+            </div>
+            <div className="plat-percent">{totalGanhos > 0 ? ((ganhosPorMercadoLivre/totalGanhos)*100).toFixed(0) : 0}%</div>
+          </div>
         </div>
         
         <div className="chart-barras">
@@ -237,6 +257,14 @@ function App() {
               <img src={logo99} alt="99" />
               <span>99</span>
             </div>
+            <div className={`opcao-plataforma ${plataforma === 'Shopee' ? 'ativa-shopee' : ''}`} onClick={() => setPlataforma('Shopee')}>
+              <img src={logoShopee} alt="Shopee" />
+              <span>Shopee</span>
+            </div>
+            <div className={`opcao-plataforma ${plataforma === 'Mercado Livre' ? 'ativa-mercadolivre' : ''}`} onClick={() => setPlataforma('Mercado Livre')}>
+              <img src={logoMercadoLivre} alt="Mercado Livre" />
+              <span>M. Livre</span>
+            </div>
           </div>
         )}
 
@@ -264,6 +292,8 @@ function App() {
                 <div className="flex-row">
                   {t.descricao.startsWith('Uber') && <img src={logoUber} className="mini-logo" alt="Uber" />}
                   {t.descricao.startsWith('99') && <img src={logo99} className="mini-logo" alt="99" />}
+                  {t.descricao.startsWith('Shopee') && <img src={logoShopee} className="mini-logo" alt="Shopee" />}
+                  {t.descricao.startsWith('Mercado Livre') && <img src={logoMercadoLivre} className="mini-logo" alt="Mercado Livre" />}
                   <span>{t.descricao}</span>
                 </div>
               </div>

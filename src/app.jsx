@@ -55,6 +55,15 @@ function App() {
   const totalGastos = transacoesFiltradas.filter(t => t.tipo === 'gasto').reduce((acc, t) => acc + t.valor, 0);
   const saldoFinal = totalGanhos - totalGastos;
   const totalKmMes = transacoesFiltradas.reduce((acc, t) => acc + (t.distanciaPercorrida || 0), 0);
+  
+  // --- NOVAS ESTATÍSTICAS ---
+  const ganhosPorUber = transacoesFiltradas.filter(t => t.tipo === 'ganho' && t.descricao.startsWith('Uber')).reduce((acc, t) => acc + t.valor, 0);
+  const ganhosPor99 = transacoesFiltradas.filter(t => t.tipo === 'ganho' && t.descricao.startsWith('99')).reduce((acc, t) => acc + t.valor, 0);
+  const gastoCombustivel = transacoesFiltradas.filter(t => t.descricao && t.descricao.includes('Combustível')).reduce((acc, t) => acc + t.valor, 0);
+  const diasComDados = new Set(transacoesFiltradas.map(t => t.data)).size;
+  const mediaGanhosPorDia = diasComDados > 0 ? totalGanhos / diasComDados : 0;
+  const lucroLiquidoPorKm = totalKmMes > 0 ? saldoFinal / totalKmMes : 0;
+  const eficienciaLucro = totalGanhos > 0 ? (saldoFinal / totalGanhos) * 100 : 0;
 
   // --- ADICIONAR NO FIREBASE ---
   const adicionarTransacao = async (e) => {
@@ -140,7 +149,7 @@ function App() {
           <div className="chart-mini">
             <Doughnut data={{
               labels: ['Ganhos', 'Gastos'],
-              datasets: [{ data: [totalGanhos, totalGastos], backgroundColor: ['#2ecc71', '#e74c3c'] }]
+              datasets: [{ data: [totalGanhos, totalGastos], backgroundColor: ['#10b981', '#ef4444'] }]
             }} options={{ maintainAspectRatio: false }} />
           </div>
           <div className="chart-info">
@@ -148,12 +157,60 @@ function App() {
             <small>Saldo Líquido</small>
           </div>
         </div>
+        
+        {/* NOVAS ESTATÍSTICAS */}
+        <div className="stats-grid">
+          <div className="stat-card success">
+            <div className="stat-label">Média Diária</div>
+            <div className="stat-value">R$ {mediaGanhosPorDia.toFixed(2)}</div>
+            <div className="stat-detail">{diasComDados} dias com ganhos</div>
+          </div>
+          
+          <div className="stat-card primary">
+            <div className="stat-label">Lucro por KM</div>
+            <div className="stat-value">R$ {lucroLiquidoPorKm.toFixed(2)}</div>
+            <div className="stat-detail">{totalKmMes.toFixed(0)} km rodados</div>
+          </div>
+          
+          <div className="stat-card accent">
+            <div className="stat-label">Eficiência</div>
+            <div className="stat-value">{eficienciaLucro.toFixed(1)}%</div>
+            <div className="stat-detail">de lucro sobre ganhos</div>
+          </div>
+          
+          <div className="stat-card danger">
+            <div className="stat-label">Combustível</div>
+            <div className="stat-value">R$ {gastoCombustivel.toFixed(2)}</div>
+            <div className="stat-detail">{((gastoCombustivel/totalGastos)*100).toFixed(0)}% dos gastos</div>
+          </div>
+        </div>
+
+        {/* COMPARATIVO PLATAFORMAS */}
+        <div className="plataforma-comparison">
+          <div className="plat-item">
+            <img src={logoUber} alt="Uber" className="plat-logo" />
+            <div className="plat-info">
+              <span className="plat-name">Uber</span>
+              <span className="plat-valor">R$ {ganhosPorUber.toFixed(2)}</span>
+            </div>
+            <div className="plat-percent">{totalGanhos > 0 ? ((ganhosPorUber/totalGanhos)*100).toFixed(0) : 0}%</div>
+          </div>
+          <div className="plat-item">
+            <img src={logo99} alt="99" className="plat-logo" />
+            <div className="plat-info">
+              <span className="plat-name">99</span>
+              <span className="plat-valor">R$ {ganhosPor99.toFixed(2)}</span>
+            </div>
+            <div className="plat-percent">{totalGanhos > 0 ? ((ganhosPor99/totalGanhos)*100).toFixed(0) : 0}%</div>
+          </div>
+        </div>
+        
         <div className="chart-barras">
           <Bar data={{
             labels: diasOrdenados.map(d => `Dia ${d}`),
             datasets: [
-              { label: 'Ganhos', data: diasOrdenados.map(d => dadosPorDia[d].ganho), backgroundColor: '#2ecc71' },
-              { label: 'Gastos', data: diasOrdenados.map(d => dadosPorDia[d].gasto), backgroundColor: '#e74c3c' }
+              { label: 'Ganhos', data: diasOrdenados.map(d => dadosPorDia[d].ganho), backgroundColor: '#10b981' },
+              { label: 'Gastos', data: diasOrdenados.map(d => dadosPorDia[d].gasto), backgroundColor: '#ef4444' }
             ]
           }} options={{ responsive: true, maintainAspectRatio: false }} />
         </div>
